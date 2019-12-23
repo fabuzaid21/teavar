@@ -7,7 +7,7 @@ using DelimitedFiles, LightGraphs
 function nextRun(dir)
     dir = joinpath(@__DIR__, "./$dir")
     if isfile("$(dir)/counter.txt") == false
-        mkdir("$(dir)")
+        mkpath("$(dir)")
         writedlm("$(dir)/counter.txt", "1")
     end
     c = Int(readdlm("$(dir)/counter.txt")[1])

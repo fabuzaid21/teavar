@@ -8,7 +8,7 @@ include("./Algorithms/SMORE.jl")
 include("./Algorithms/FFC.jl")
 include("./simulation.jl")
 
-function getThroughputGraphs(algorithmns,
+function getThroughputGraphs(algorithms,
                               topologies,
                               demand_downscales,
                               num_demands,
@@ -45,8 +45,8 @@ function getThroughputGraphs(algorithmns,
         push!(scenario_probs_all, scenario_probs_top)
     end
     
-    progress = ProgressMeter.Progress(length(algorithmns)*length(topologies)*num_demands*iterations*length(x_vals), .1, "Computing Throughput...", 50)
-    for alg in 1:length(algorithmns)
+    progress = ProgressMeter.Progress(length(algorithms)*length(topologies)*num_demands*iterations*length(x_vals), .1, "Computing Throughput...", 50)
+    for alg in 1:length(algorithms)
         beta_cvar_totals = zeros(length(x_vals))
         beta_var_totals = zeros(length(x_vals))
         for t in 1:length(topologies)
@@ -54,7 +54,7 @@ function getThroughputGraphs(algorithmns,
             for d in 1:num_demands
                 demand, flows = readDemand("$(topologies[t])/demand", length(nodes), d, downscale=demand_downscales[t])
                 for i in 1:iterations
-                    if algorithmns[alg] == "TEAVAR"
+                    if algorithms[alg] == "TEAVAR"
                         if teavar_paths != "KSP"
                             T, Tf, k = parsePaths("$(topologies[t])/paths/$(teavar_paths)", links, flows)
                         else
@@ -68,11 +68,11 @@ function getThroughputGraphs(algorithmns,
                             var = VAR(losses, scenario_probs_all[t][i], beta)
                             beta_cvar_totals[b] += cvar
                             beta_var_totals[b] += var
-                            ProgressMeter.next!(progress, showvalues = [(:algorithmn,algorithmns[alg]), (:topology,topologies[t]), (:demand,"$(d)/$(num_demands)"), (:iteration, "$(i)/$(iterations)"), (:beta, x_vals[b]), (:cvar, cvar), (:var, var)])
+                            ProgressMeter.next!(progress, showvalues = [(:algorithmn,algorithms[alg]), (:topology,topologies[t]), (:demand,"$(d)/$(num_demands)"), (:iteration, "$(i)/$(iterations)"), (:beta, x_vals[b]), (:cvar, cvar), (:var, var)])
                         end
                     else
-                        T, Tf, k = parsePaths("$(topologies[t])/paths/$(algorithmns[alg])", links, flows)
-                        a = parseYatesSplittingRatios("$(topologies[t])/paths/$(algorithmns[alg])", k, flows)
+                        T, Tf, k = parsePaths("$(topologies[t])/paths/$(algorithms[alg])", links, flows)
+                        a = parseYatesSplittingRatios("$(topologies[t])/paths/$(algorithms[alg])", k, flows)
                         losses = calculateLossReallocation(links, capacity, demand, flows, T, Tf, k, a, scenarios_all[t][i], scenario_probs_all[t][i])
                         for b in 1:length(x_vals)
                             beta = x_vals[b]
@@ -80,7 +80,7 @@ function getThroughputGraphs(algorithmns,
                             var = VAR(losses, scenario_probs_all[t][i], beta)
                             beta_cvar_totals[b] += cvar
                             beta_var_totals[b] += var
-                            ProgressMeter.next!(progress, showvalues = [(:algorithmn,algorithmns[alg]), (:topology,topologies[t]), (:demand,"$(d)/$(num_demands)"), (:iteration, "$(i)/$(iterations)"), (:beta, x_vals[b]), (:cvar, cvar), (:var, var)])
+                            ProgressMeter.next!(progress, showvalues = [(:algorithmn,algorithms[alg]), (:topology,topologies[t]), (:demand,"$(d)/$(num_demands)"), (:iteration, "$(i)/$(iterations)"), (:beta, x_vals[b]), (:cvar, cvar), (:var, var)])
                         end
                     end
                 end
@@ -90,7 +90,7 @@ function getThroughputGraphs(algorithmns,
         beta_avg_cvars = beta_cvar_totals ./ (num_demands * length(topologies) * iterations * length(x_vals))
         push!(y_vals_vars, 1 .- beta_avg_vars)
         push!(y_vals_cvars, 1 .- beta_avg_cvars)
-        push!(labels, algorithmns[alg])
+        push!(labels, algorithms[alg])
     end
 
 
@@ -99,7 +99,7 @@ function getThroughputGraphs(algorithmns,
     writedlm("$(dir)/x_vals", x_vals)
     writedlm("$(dir)/y_vals_cvars", y_vals_cvars)
     writedlm("$(dir)/y_vals_vars", y_vals_vars)
-    writedlm("$(dir)/params", [["algorithmns", "topologies", "demand_downscales", "num_demands", "iterations", "bars", "cutoff", "k", "tevar_paths", "weibull_scale"], [algorithmns, topologies, demand_downscales, num_demands, iterations, bars, cutoff, k, teavar_paths, weibull_scale]])
+    writedlm("$(dir)/params", [["algorithms", "topologies", "demand_downscales", "num_demands", "iterations", "bars", "cutoff", "k", "tevar_paths", "weibull_scale"], [algorithms, topologies, demand_downscales, num_demands, iterations, bars, cutoff, k, teavar_paths, weibull_scale]])
 
 
     if plot

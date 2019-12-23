@@ -5,9 +5,9 @@ include("./throughput_guarantee.jl")
 include("./availability.jl")
 include("./cutoff_error.jl")
 include("./path_selection.jl")
-include("probability_noise.jl")
+include("./probability_noise.jl")
 include("./network_utilization.jl")
-include("throughput.jl")
+include("./throughput.jl")
 include("./timer.jl")
 
 function readInput(message, default, type)
@@ -53,6 +53,7 @@ Base.@ccallable function julia_main()::String
     experiment = parsed_args["experiment"]
     # plot = true
     # experiment = "availability"
+    print(experiment)
     if experiment == "scenario_coverage"
         shape = readInput("Weibull shape (0.8): ", 0.8, Float64)
         scale = readInput("Weibull scale (0.0001): ", 0.0001, Float64)
@@ -118,7 +119,8 @@ Base.@ccallable function julia_main()::String
         cutoff = readInput("Cutoff (0.00001): ", 0.00001, Float64)
         num_demands = readInput("Number of demands (4): ", 4, Int)
         iterations = readInput("Iterations (4): ", 4, Int)
-        getThroughputGraphs(algorithms, topologies, demand_downscales, num_demands, iterations, availabilities, cutoff, teavar_paths="KSP", weibull_scale=.0001, plot=plot)
+        num_paths = readInput("Num paths (4): ", 4, Int)
+        getThroughputGraphs(algorithms, topologies, demand_downscales, num_demands, iterations, availabilities, cutoff, num_paths, teavar_paths="KSP", weibull_scale=.0001, plot=plot)
     elseif experiment == "utilization"
         topology = readInput("Topology (B4): ", "B4", String) 
         availabilities = map(i -> parse(Float64, i), split(readInput("Availabilities (.99,.999,.9999): ", ".99,.999,.9999", String), ","))
@@ -130,4 +132,4 @@ Base.@ccallable function julia_main()::String
     return "...Complete"
 end
 
-# julia_main()
+julia_main()
