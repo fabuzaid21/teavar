@@ -26,7 +26,7 @@ end
 
 function parse_commandline()
     s = ArgParseSettings()
-    @add_arg_table s begin
+    @add_arg_table! s begin
         "experiment"
             help = "Type of experiment to run. One of...
                             scenarios_coverage (Fig 12a)

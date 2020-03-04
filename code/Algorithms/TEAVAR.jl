@@ -13,6 +13,7 @@ function TEAVAR(env,
                 Tf,
                 scenarios,
                 scenario_probs;
+                max_concurrent_flow=true,
                 explain=false,
                 verbose=false,
                 utilization=false,
@@ -54,54 +55,61 @@ function TEAVAR(env,
         end
     end
 
-    model = Model(solver=GurobiSolver(env, OutputFlag=0))
+    model = Model(solver=GurobiSolver(env, OutputFlag=1))
+    # flow per commodity per path variables
     @variable(model, a[1:nflows, 1:k] >= 0, basename="a", category=:SemiCont)
+    # alpha variable
     @variable(model, alpha >= 0, basename="alpha", category=:SemiCont)
+    # maximum flow lost in that scenario
     @variable(model, umax[1:nscenarios] >= 0, basename="umax")
+    # flow lost per commod per scenario
     @variable(model, u[1:nscenarios, 1:nflows] >= 0, basename="u")
  
-
     # for s in 1:nscenarios
+    # capacity constraints for final flow assigned to "a" variables
     for e in 1:nedges
         @constraint(model, sum(a[f,t] * L[Tf[f][t],e] for f in 1:nflows, t in 1:size(Tf[f],1)) <= capacity[e])
     end
     # end
 
+    if max_concurrent_flow
+      # FLOW LEVEL LOSS
+      @expression(model, satisfied[s=1:nscenarios, f=1:nflows], sum(a[f,t] * X[s,Tf[f][t]] for t in 1:size(Tf[f],1)) / demand[f])
 
-    # FLOW LEVEL LOSS
-    @expression(model, satisfied[s=1:nscenarios, f=1:nflows], sum(a[f,t] * X[s,Tf[f][t]] for t in 1:size(Tf[f],1)) / demand[f])
+      for s in 1:nscenarios
+          for f in 1:nflows
+              # @constraint(model, (demand[f] - sum(a[f,t] * X[s,Tf[f][t]] for t in 1:size(Tf[f],1))) / demand[f] <= u[s,f])
+              @constraint(model, u[s,f] >= 1 - satisfied[s,f])
+          end
+      end
 
-    for s in 1:nscenarios
-        for f in 1:nflows
-            # @constraint(model, (demand[f] - sum(a[f,t] * X[s,Tf[f][t]] for t in 1:size(Tf[f],1))) / demand[f] <= u[s,f])
-            @constraint(model, u[s,f] >= 1 - satisfied[s,f])
-        end
+      # SCENARIO LEVEL LOSS
+      # for s in 1:nscenarios
+          # @constraint(model, umax[s] + alpha >= 0)
+      # end
+
+      for s in 1:nscenarios
+          if average
+              @constraint(model, umax[s] + alpha >= (sum(u[s,f] for f in 1:nflows)) / nflows)
+              # @constraint(model, umax[s] + alpha >= avg_loss[s])
+          else
+              for f in 1:nflows
+                  @constraint(model, umax[s] + alpha >= u[s,f])
+              end
+          end
+      end
+      @objective(model, Min, alpha + (1 / (1 - beta)) * sum((p[s] * umax[s] for s in 1:nscenarios)))
+    else
+      # TODO
     end
-
-    # SCENARIO LEVEL LOSS
-    # for s in 1:nscenarios
-        # @constraint(model, umax[s] + alpha >= 0)
-    # end
-
-    for s in 1:nscenarios
-        if average
-            @constraint(model, umax[s] + alpha >= (sum(u[s,f] for f in 1:nflows)) / nflows)
-            # @constraint(model, umax[s] + alpha >= avg_loss[s])
-        else
-            for f in 1:nflows
-                @constraint(model, umax[s] + alpha >= u[s,f])
-            end
-        end
-    end
-
-    @objective(model, Min, alpha + (1 / (1 - beta)) * sum((p[s] * umax[s] for s in 1:nscenarios)))
     solve(model)
 
 
     if (explain)
+        println("Runtime: ", getsolvetime(model))
         printResults(getobjectivevalue(model), getvalue(alpha), getvalue(a), getvalue(u), getvalue(umax), edges, scenarios, T, Tf, L, capacity, verbose=verbose, utilization=utilization)
     end
     
-    return (getvalue(alpha), getobjectivevalue(model), getvalue(a), getvalue(umax))
+    return (getvalue(alpha), getobjectivevalue(model), getvalue(a), getvalue(umax), getsolvetime(model))
 end
 

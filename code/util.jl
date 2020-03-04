@@ -6,6 +6,7 @@ using Distributions, DelimitedFiles, ProgressMeter, Combinatorics
 
 function printResults(o, alpha, a, u, umax, edges, scenarios, T, Tf, L, capacity; verbose=false, utilization=true)
     println("Objective value: ", o)
+    println("Alpha: ", alpha)
     print("\n")
     println("------------------ Allocations ----------------------\n")
     for i in 1:size(a,1)
@@ -42,7 +43,7 @@ function printResults(o, alpha, a, u, umax, edges, scenarios, T, Tf, L, capacity
             println("\n")
         end
     end
-    println("------------------------------------------------\n")
+    println("------------------Utilization-------------------\n")
     if utilization
         for e in 1:size(edges,1)
             println("EDGE: ", e, " : ", edges[e])
