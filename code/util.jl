@@ -4,12 +4,13 @@ using Distributions, DelimitedFiles, ProgressMeter, Combinatorics
 #######################  Print Results of TEAVAR formulation  ########################
 ####################################################################################
 
-function printResults(o, alpha, a, u, umax, edges, scenarios, T, Tf, L, capacity; verbose=false, utilization=true)
+function printResults(o, alpha, a, u, umax, edges, scenarios, T, Tf, L, capacity, p, demand; verbose=false, utilization=true)
     println("Objective value: ", o)
     println("Alpha: ", alpha)
     print("\n")
     println("------------------ Allocations ----------------------\n")
     for i in 1:size(a,1)
+    	println("Flow ", i, " demand= ", demand[i])
         for j in 1:size(a,2)
             println("Flow ",i, ", tunnel ", j, " allocated : ", a[i,j])
             print("Edges in use: ")
@@ -22,39 +23,37 @@ function printResults(o, alpha, a, u, umax, edges, scenarios, T, Tf, L, capacity
     if verbose
         println("--------------- Loss Breakdown ---------------------\n")
         for s in 1:size(umax,1)
-            if s == 1
-                println("Scenario 1: ", scenarios[s])
-            else
-                println("Scenario ", s, ": ", scenarios[s])
-            end
-            print("Edges: ")
+            println("Scenario ", s, ": ", scenarios[s], " prob: ", p[s])
+            print("Down edges: ")
             for i in 1:size(scenarios[s],1)
                 if scenarios[s][i] == 0.0
                     print(edges[i], " ")
                 end
             end
-            print("go down\n\n")
+	    println("")
 
             for f in 1:size(u,2)
-                println("Loss on flow ", f, " = ", u[s,f])
+	        if u[s,f] > alpha
+                    println("Loss on flow ", f, " = ", u[s,f]-alpha)
+		end
             end
-            println("umax = ", umax[s])
-            println("Max loss = ", umax[s] + alpha)
+            println("umax[", s, "] = ", umax[s])
             println("\n")
         end
     end
     println("------------------Utilization-------------------\n")
     if utilization
         for e in 1:size(edges,1)
-            println("EDGE: ", e, " : ", edges[e])
-            println("capacity: ", capacity[e])
             s = 0
             for f in 1:size(a,1)
                 for t in 1:size(a,2)
                     s += a[f,t] * L[Tf[f][t],e]
                 end
             end
-            println("used: ", s)
+            print("EDGE values: ", e, " : ", edges[e], " cap: ", capacity[e], " alloc: ", s)
+	    if s > 0.99 * capacity[e]
+	    	print(" <-- near cap")
+	    end
             println("")
         end
     end

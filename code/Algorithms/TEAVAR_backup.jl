@@ -12,8 +12,7 @@ function TEAVAR(env,
                 T,
                 Tf,
                 scenarios,
-                scenario_probs,
-		outputfilename;
+                scenario_probs;
                 max_concurrent_flow=true,
                 explain=false,
                 verbose=false,
@@ -74,6 +73,7 @@ function TEAVAR(env,
     # end
 
     if max_concurrent_flow
+      println("Running max concurrent flow")
       # FLOW LEVEL LOSS
       @expression(model, satisfied[s=1:nscenarios, f=1:nflows], sum(a[f,t] * X[s,Tf[f][t]] for t in 1:size(Tf[f],1)) / demand[f])
 
@@ -101,14 +101,48 @@ function TEAVAR(env,
       end
       @objective(model, Min, alpha + (1 / (1 - beta)) * sum((p[s] * umax[s] for s in 1:nscenarios)))
     else
-      # TODO
+      # srikanth 3/6/2020
+      # TODO: do these loss formulas hold if demands are not satisfiable?
+      println("Running max total flow")
+      @expression(model, satisfied[s=1:nscenarios, f=1:nflows], sum(a[f,t] * X[s, Tf[f][t]] for t in 1:size(Tf[f],1)))
+
+      for s in 1:nscenarios
+	for f in 1:nflows
+	  @constraint(model, u[s, f] >= demand[f] - satisfied[s,f])
+	  @constraint(model, umax[s] + alpha >= u[s,f])
+	end
+      end
+
+      @objective(model, Min, alpha + (1/ (1-beta)) * sum((p[s] * umax[s] for s in 1:nscenarios)))
     end
     solve(model)
 
 
     if (explain)
         println("Runtime: ", getsolvetime(model))
-        printResults(getobjectivevalue(model), getvalue(alpha), getvalue(a), getvalue(u), getvalue(umax), edges, scenarios, T, Tf, L, capacity, p, demand, verbose=verbose, utilization=utilization)
+	
+	# some simple debugging information
+	println("#edges: ", nedges)
+	println("#tunnels: ", ntunnels)
+	println("#demands: ", nflows, " total demand=", sum(demand[f] for f in 1:nflows))
+	println("#scenarios: ", nscenarios)
+
+	result_alpha = getvalue(alpha)
+	result_a = getvalue(a)
+	
+	# compute net flow
+	factor = 1 - result_alpha
+	totalflow = 0
+	for f in 1:nflows
+	 println("Flow= ", f, " #tunnels= ", size(Tf[f], 1))
+	 for t in 1:size(Tf[f], 1)
+	  totalflow += result_a[f,t]
+         end
+        end
+
+	println("totalalloc= ", totalflow, " netalloc= ", factor * totalflow)
+
+        printResults(getobjectivevalue(model), result_alpha, result_a, getvalue(u), getvalue(umax), edges, scenarios, T, Tf, L, capacity, p, demand, verbose=verbose, utilization=utilization)
     end
     
     return (getvalue(alpha), getobjectivevalue(model), getvalue(a), getvalue(umax), getsolvetime(model))
