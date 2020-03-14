@@ -1,6 +1,7 @@
 include("./util.jl")
 include("./parsers.jl")
 include("./Algorithms/TEAVAR_sk.jl")
+using Dates;
 
 env = Gurobi.Env()
 
@@ -15,12 +16,14 @@ demand_num = parse(Int, ARGS[2]) # used to be 1
 beta=parse(Float64, ARGS[3]) # used to be 0.99
 max_cf=ARGS[4] == "mcf" 
 paths = ARGS[5] # used to be "SMORE" should be "SMORE4" or "SMORE8"
+what_to_read = ARGS[6]
+cutoff_downscale = parse(Float64, ARGS[7]) # used to 10
 
 # output file for result analysis and debugging
-outputfile=string(topology, "_d", demand_num, "_beta", beta, "_mcf", max_cf, "_paths", paths)
+outputfile=string(topology, "_d", demand_num, "_beta", beta, "_mcf", max_cf, "_paths", paths, "_topo", what_to_read, "_cutoffDS", cutoff_downscale)
 
 
-links, capacity, link_probs, nodes = readTopology(topology)
+links, capacity, link_probs, nodes = readTopology(topology, what_to_read=what_to_read)
 demand, flows = readDemand("$(topology)/demand", length(nodes), demand_num, matrix=true)
 T, Tf, k = parsePaths("$(topology)/paths/$(paths)", links, flows)
 
@@ -33,17 +36,38 @@ println("FailureProbs= ", probabilities)
 
 let cutoff = (sum(probabilities)/length(probabilities))^2
 	while true
-		global scenarios, scenario_probs = subScenariosRecursion(probabilities, cutoff)
+		println(Dates.format(now(), "HH:MM:SS"), " going to subScenariosRecursion with cutoff=", cutoff)
+		flush(stdout)
+
+		task_cutoff_finder = @task global scenarios, scenario_probs = subScenariosRecursion(probabilities, cutoff)
+		t = Timer(60)
+		# run for 60s or until task cutoff finder finishes
+		schedule(task_cutoff_finder)
+		while (!@isdefined(scenarios) || length(scenarios) == 0 || isopen(t)) && !istaskdone(task_cutoff_finder)
+			# println(Dates.format(now(), "HH::MM::SS"), ": testing")
+			# flush(stdout)
+			yield()
+		end
+
 		nscenarios = length(scenarios)
 		total_scenario_prob = sum(scenario_probs)
 	
-		println("cutoff =", cutoff, " #scenarios=", nscenarios, " total_scenar_prob=", total_scenario_prob)
+		println(Dates.format(now(), "HH:MM:SS"), " cutoff =", cutoff, " #scenarios=", nscenarios, " total_scenar_prob=", total_scenario_prob)
+		flush(stdout)
 
-		if total_scenario_prob >= 1 - 0.1 * (1-beta)
+		if total_scenario_prob >= 1 - (1-beta)/ cutoff_downscale
 			break
 		end
 
-		cutoff = cutoff / 2
+		if !isopen(t)
+			println(Dates.format(now(), "HH:MM:SS"), ": timed out!")
+			flush(stdout)
+			break
+		end
+
+		cutoff = cutoff / cutoff_downscale
+		# sk: not sure about sizing down cutoff and giving up
+		# break
 	end
 end
 

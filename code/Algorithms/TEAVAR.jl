@@ -108,6 +108,13 @@ function TEAVAR(env,
 
     if (explain)
         println("Runtime: ", getsolvetime(model))
+	println("beta: ", beta)
+	println("#flows: ", nflows)
+	println("#edges: ", nedges)
+	println("#tunnels: ", ntunnels)
+	println("#demands: ", nflows, " total demand= ", sum(demand[f] for f in 1:nflows))
+	println("#scenarios: ", nscenarios, " total_prob= ", sum(p[s] for s in 1:nscenarios))
+
         printResults(getobjectivevalue(model), getvalue(alpha), getvalue(a), getvalue(u), getvalue(umax), edges, scenarios, T, Tf, L, capacity, p, demand, verbose=verbose, utilization=utilization)
     end
     

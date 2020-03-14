@@ -160,6 +160,7 @@ function subScenariosRecursion(original, cutoff, remaining=[], offset=0, partial
             return
         end
     end
+    yield()
 
     for i in 1:size(remaining,1)
         offset = size(original,1) - size(remaining,1)

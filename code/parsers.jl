@@ -22,9 +22,9 @@ end
 #############################  Read Topology  ######################################
 ####################################################################################
 
-function readTopology(topology; zeroindex=false, downscale=1)
+function readTopology(topology; zeroindex=false, downscale=1, what_to_read="topology.txt")
     dir = joinpath(@__DIR__, "./data/$topology")
-    input_topology = readdlm("$dir/topology.txt", header=true)[1]
+    input_topology = readdlm("$dir/$what_to_read", header=true)[1]
     input_nodes = readdlm("$dir/nodes.txt", header=true)[1]
 
     ignore = ()
@@ -39,6 +39,19 @@ function readTopology(topology; zeroindex=false, downscale=1)
         end
     end
     return links, capacity, probabilities, input_nodes
+end
+
+function writeTopology(topology, links, capacity, probabilities)
+	dir = joinpath(@__DIR__, "./data/$topology")
+	ntopo = open("$dir/topo_n.txt", "w")
+	# this header is incorrect; wtf
+	print(ntopo, "to_node from_node capacity prob_failure\n")
+	for i in 1:length(links)
+		print(ntopo, links[i][1], "\t", links[i][2], "\t", capacity[i]*1000, "\t", probabilities[i], "\n")
+	end
+	flush(ntopo)
+	close(ntopo)
+	return 
 end
 
 ####################################################################################

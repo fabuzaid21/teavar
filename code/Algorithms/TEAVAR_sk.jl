@@ -26,6 +26,8 @@ function TEAVAR_SK(env,
     nscenarios = length(scenarios)
     p = scenario_probs
 
+    println(Dates.format(now(), "HH:MM:SS"), ": #edges ", nedges, " #flows ", nflows, " #tunnels ", ntunnels, " #scenarios ", nscenarios)
+
     #CREATE TUNNEL SCENARIO MATRIX
     X  = ones(nscenarios,ntunnels)
     for s in 1:nscenarios
@@ -46,6 +48,8 @@ function TEAVAR_SK(env,
         end
     end
 
+    println(Dates.format(now(), "HH:MM:SS"), ": created tunnel scenario matrix")
+
     #CREATE TUNNEL EDGE MATRIX
     L = zeros(ntunnels, nedges)
     for t in 1:ntunnels
@@ -56,6 +60,8 @@ function TEAVAR_SK(env,
         end
     end
 
+    println(Dates.format(now(), "HH:MM:SS"), ": created tunnel edge matrix")
+
     model = Model(solver=GurobiSolver(env, OutputFlag=1))
     # flow per commodity per path variables
     @variable(model, a[1:nflows, 1:k] >= 0, basename="a", category=:SemiCont)
@@ -65,12 +71,17 @@ function TEAVAR_SK(env,
     @variable(model, umax[1:nscenarios] >= 0, basename="umax")
     # flow lost per commod per scenario
     @variable(model, u[1:nscenarios, 1:nflows] >= 0, basename="u")
- 
+
     # capacity constraints for final flow assigned to "a" variables
     for e in 1:nedges
         @constraint(model, sum(a[f,t] * L[Tf[f][t],e] for f in 1:nflows, t in 1:size(Tf[f],1)) <= capacity[e])
     end
 
+    println(Dates.format(now(), "HH:MM:SS"), ": some variables and constraints are created")
+    total_scenario_prob = sum(p[s] for s in 1:nscenarios)
+    println("total_scenario_prob= ", total_scenario_prob)
+    total_demand = sum(demand[f] for f in 1:nflows)
+ 
     if max_concurrent_flow
       println("Running max concurrent flow")
       # FLOW LEVEL LOSS
@@ -91,7 +102,8 @@ function TEAVAR_SK(env,
               end
           end
       end
-      @objective(model, Min, alpha + (1 / (1 - beta)) * sum((p[s] * umax[s] for s in 1:nscenarios)))
+      
+      @objective(model, Min, alpha + (1 / (1 - beta)) * (sum((p[s] * umax[s] for s in 1:nscenarios)) + ((1-total_scenario_prob) * (1-alpha) )))
 
     else
       # srikanth 3/6/2020
@@ -102,24 +114,26 @@ function TEAVAR_SK(env,
       for s in 1:nscenarios
 	@constraint(model, umax[s] >= 0)
 	for f in 1:nflows
+	  # note: satisfied[s,f] can be more than demand[f]
 	  @constraint(model, u[s, f] >= demand[f] - satisfied[s,f])
-
-	  # doing this leads to a very small total allocation
-	  # @constraint(model, satisfied[s, f] <= demand[f])
 	end
-	@expression(model, sum_u_f[s=1:nscenarios], sum(u[s,f] for f in 1:nflows))
-	@constraint(model, umax[s] + alpha >= sum_u_f[s])
+	# @expression(model, sum_u_f[s=1:nscenarios], sum(u[s,f] for f in 1:nflows))
+	@constraint(model, umax[s] + alpha >= sum(u[s, f] for f in 1:nflows))
       end
 
-      @objective(model, Min, alpha + (1/ (1-beta)) * sum((p[s] * umax[s] for s in 1:nscenarios)))
+
+      @objective(model, Min, alpha + (1/ (1-beta)) * (sum((p[s] * umax[s] for s in 1:nscenarios)) + ((1-total_scenario_prob)*(total_demand-alpha))))
     end
+
+    println(Dates.format(now(), "HH:MM:SS"), ": ready to solve")
+    flush(stdout)
+
     solve(model)
 
-
+    println(Dates.format(now(), "HH:MM:SS"), ": solver finished; explaining")
     if (explain)
         println("Runtime: ", getsolvetime(model))
 
-	total_demand = sum(demand[f] for f in 1:nflows)
 	
 	# some simple debugging information
 	println("beta: ", beta)
@@ -132,6 +146,7 @@ function TEAVAR_SK(env,
 	result_u = getvalue(u)
 	result_umax = getvalue(umax)
 	result_satisfied = getvalue(satisfied)
+	result_alpha = getvalue(alpha)
 
 	for f in 1:nflows
 		sat_vector=Array{Float64}(undef, nscenarios)
@@ -141,16 +156,31 @@ function TEAVAR_SK(env,
 		println("satisfied[*,", f, "]: ", sat_vector)
 	end
 
-	per_scenario_losses = Array{Tuple{Float64,Int64}}(undef, nscenarios)
+	per_scenario_losses = Array{Tuple{Float64,Int64,Float64}}(undef, nscenarios)
+
+	if max_concurrent_flow
+		loss_s_f = ones(nflows)' .- result_satisfied
+	else
+		loss_s_f = demand' .- result_satisfied
+	end
+	loss_s_f[loss_s_f .< 0] .= 0
+
 	for s in 1:nscenarios
-             per_scenario_losses[s] = (result_umax[s], s)
+	     if max_concurrent_flow
+		loss_s = maximum(loss_s_f[s, :])
+	     else
+		loss_s = sum(loss_s_f[s, :])
+	     end
+	     # max_loss_s = maximum(loss_s_f[s, :])
+	     # max_u_s = maximum(result_u[s, :])
+	     # println(s, ": max_loss_s/max_u_s/result_umax_s= ", max_loss_s, " ", max_u_s, " ", result_umax[s])
+	     per_scenario_losses[s] = (loss_s, s, p[s])
         end
 	println("psl before sort=", per_scenario_losses)
 	per_scenario_losses = sort(per_scenario_losses, by = first)
 	println("psl after sort=", per_scenario_losses)
 
 
-	result_alpha = getvalue(alpha)
 	println("Alpha after obj=", result_alpha)
 
 	result_a = getvalue(a)
