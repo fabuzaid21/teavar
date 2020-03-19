@@ -37,6 +37,8 @@ for o_fname in output_fnames:
     netalloc = 0
     topo_num = 0
     demand_num = 0
+    num_match = 0
+    num_must_match = 8  # ignore partial output files
 
     with open(o_fname, "r") as of:
         for line in of:
@@ -46,37 +48,49 @@ for o_fname in output_fnames:
                 num_flows = match.group(2)
                 num_tunnels = match.group(3)
                 num_scenarios = match.group(4)
+                num_match += 1
 
             match = re.search(r'beta: ([\d.]+)', line)
             if match:
                 beta = match.group(1)
+                num_match += 1
 
             match = re.search(r'Runtime: ([\d.]+)', line)
             if match:
                 runtime = match.group(1)
+                num_match += 1
 
             match = re.search(r'total demand=([\d.]+)', line)
             if match:
                 total_demand = match.group(1)
+                num_match += 1
 
             match = re.search(r'netalloc1/2= ([\d.]+)', line)
             if match:
                 netalloc = match.group(1)
+                num_match += 1
 
             match = re.search(r'total_scenario_prob= ([\d.]+)', line)
             if match:
                 total_scenario_prob = match.group(1)
+                num_match += 1
 
             match = re.search(r'topo_n([\d.]+).txt', o_fname)
             if match:
                 topo_num = match.group(1)
+                num_match += 1
 
             match = re.search(r'_d([\d.]+)_maxflow', o_fname)
             if match:
                 demand_num = match.group(1)
+                num_match += 1
 
 
         of.close()
+
+    if num_match != num_must_match:
+        print("Skipping case {} only {}/{} matches; perhaps output is partial?".format(o_fname, num_match, num_must_match))
+        continue
 
     f = float(netalloc)* 1000
     r = float(runtime)
