@@ -1,0 +1,3 @@
+Raw Topo uninett2010.graphml # 0 Demand# 40 #Edges 202 #Flows 5402 #Tunnels 9473 #Scenarios 1491 TotProb 0.5461221540713872 Beta 0.5 Runtime 2720.6770420074463 TD 9926.326164087095 NetAlloc 3.037373806532518 PFf/r 9926.326 0.105 z 0.812 #File /mnt/f/skgit/NetContract/code/teavar/code/teavar_star_uninett2010.graphml_d40_maxflow_edinvcap4_topo_n0.txt_cutoff_downscale_1.1_beta0.5
+Flush 0.5461221540713872 0.812 0.0003059917442296897 25911.20992388044
+Skipping case /mnt/f/skgit/NetContract/code/teavar/code/teavar_star_uninett2010.graphml_d40_maxflow_edinvcap4_topo_n3.txt_cutoff_downscale_1.1_beta0.5 only 4/8 matches; perhaps output is partial?
