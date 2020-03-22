@@ -8,12 +8,15 @@ from glob import iglob
 # for gcr-azsb-106
 DIR = "/home/kandula/NetContract/code/teavar/code/"
 topo = sys.argv[1] #"b4-teavar.json" #sys.argv[0]
+DEBUG = False
 
 result_fname = "result.{}".format(topo)
+if DEBUG:
+    print("Reading baselines from {}".format(result_fname))
 baselines = {}
 with open(result_fname, 'r') as rf:
     for line in rf:
-        match = re.search(r'RESULT D (\d+) .* z (\d.+) PF flow/runtime (\d.+) (\d.+) NcIEPE flow/runtime (\d.+) (\d.+)', line)
+        match = re.search(r'RESULT D (\d+) .* z (\d.+) PF flow/runtime (\d.+) (\d.+) NcIEPE flow/runtime.* (\d.+) (\d.+)', line)
         if match:
             num_demand = match.group(1)
             z = match.group(2)
@@ -23,12 +26,15 @@ with open(result_fname, 'r') as rf:
             nc_runtime = match.group(6)
             baselines[num_demand] = (z, pf_flow, pf_runtime, nc_flow, nc_runtime)
     rf.close()
-# print("baselines={}".format(baselines))
+    
+if DEBUG:
+    print("Found baselines={}".format(baselines))
 
 output_fnames = list(iglob('{}/teavar_star_{}_d*_maxflow_edinvcap4_topo_*'.format(DIR, topo)))
 
 for o_fname in output_fnames:
-    # print("output filename={}".format(o_fname))
+    if DEBUG:
+        print("Parsing output filename={}".format(o_fname))
     num_edges = 0
     num_flows = 0
     num_tunnels = 0
@@ -42,8 +48,24 @@ for o_fname in output_fnames:
     demand_num = 0
     num_match = 0
     num_must_match = 8  # ignore partial output files
+    
+    # parse some fields from file name
+    match = re.search(r'_d([\d.]+)_maxflow', o_fname)
+    if match:
+        demand_num = match.group(1)
+        num_match += 1
+            
+    if demand_num not in baselines:
+        print("Skip {} since demand_num {} not in baselines".format(o_fname, demand_num))
+        continue
+            
+    match = re.search(r'topo_n([\d.]+).txt', o_fname)
+    if match:
+        topo_num = match.group(1)
+        num_match += 1
 
-    with open(o_fname, "r") as of:
+    # parse the actual file
+    with open(o_fname, "r") as of:    
         for line in of:
             match = re.search(r'\#edges (\d+) \#flows (\d+) \#tunnels (\d+) \#scenarios (\d+)', line)
             if match:
@@ -78,17 +100,6 @@ for o_fname in output_fnames:
                 total_scenario_prob = match.group(1)
                 num_match += 1
 
-            match = re.search(r'topo_n([\d.]+).txt', o_fname)
-            if match:
-                topo_num = match.group(1)
-                num_match += 1
-
-            match = re.search(r'_d([\d.]+)_maxflow', o_fname)
-            if match:
-                demand_num = match.group(1)
-                num_match += 1
-
-
         of.close()
 
     if num_match != num_must_match:
@@ -98,15 +109,13 @@ for o_fname in output_fnames:
     f = float(netalloc)* 1000
     r = float(runtime)
     
-    if demand_num in baselines:
-        z = float(baselines[demand_num][0])
-        pf_f = float(baselines[demand_num][1])
-        pf_r = float(baselines[demand_num][2])
-        print("Raw Topo {} # {} Demand# {} #Edges {} #Flows {} #Tunnels {} #Scenarios {} TotProb {} Beta {} Runtime {} TD {} NetAlloc {} PFf/r {} {} z {} #File {}".format(
+    z = float(baselines[demand_num][0])
+    pf_f = float(baselines[demand_num][1])
+    pf_r = float(baselines[demand_num][2])
+    print("Raw Topo {} # {} Demand# {} #Edges {} #Flows {} #Tunnels {} #Scenarios {} TotProb {} Beta {} Runtime {} TD {} NetAlloc {} PFf/r {} {} z {} #File {}".format(
             topo, topo_num, demand_num, num_edges, num_flows, num_tunnels, num_scenarios, total_scenario_prob, beta, runtime, float(total_demand)*1000, float(netalloc)*1000, 
             pf_f, pf_r, z,
             o_fname
             ))
     if f > 0 and r > 0:
-        print("Flush {} {} {} {}".format(total_scenario_prob, z, f/pf_f, r/pf_r))
-
+       print("Flush {} {} {} {}".format(total_scenario_prob, z, f/pf_f, r/pf_r))
