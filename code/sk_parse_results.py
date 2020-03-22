@@ -3,7 +3,10 @@ import os
 import sys
 from glob import iglob
 
-DIR="/mnt/f/skgit/NetContract/code/teavar/code/"
+# for sk-z820
+# DIR="/mnt/f/skgit/NetContract/code/teavar/code/"
+# for gcr-azsb-106
+DIR = "/home/kandula/NetContract/code/teavar/code/"
 topo = sys.argv[1] #"b4-teavar.json" #sys.argv[0]
 
 result_fname = "result.{}".format(topo)
