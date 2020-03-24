@@ -57,7 +57,7 @@ let cutoff = beginning_cutoff
 		println(Dates.format(now(), "HH:MM:SS"), " cutoff =", cutoff, " #scenarios=", nscenarios, " total_scenar_prob=", total_scenario_prob)
 		flush(stdout)
 
-		if total_scenario_prob >= 1 - (1-beta)/ cutoff_downscale
+		if total_scenario_prob >= beta
 			break
 		end
 

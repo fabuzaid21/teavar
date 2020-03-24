@@ -10,7 +10,7 @@ DIR = "/home/kandula/NetContract/code/teavar/code/"
 topo = sys.argv[1] #"b4-teavar.json" #sys.argv[0]
 DEBUG = False
 
-result_fname = "result.{}".format(topo)
+result_fname = "teavar_star_plots/data/result.{}".format(topo)
 if DEBUG:
     print("Reading baselines from {}".format(result_fname))
 baselines = {}
