@@ -1,6 +1,6 @@
 include("../util.jl")
 
-using JuMP, Gurobi
+using JuMP, Gurobi, MathOptFormat
 
 function TEAVAR_SK(env,
                 edges,
@@ -124,6 +124,10 @@ function TEAVAR_SK(env,
 
       @objective(model, Min, alpha + (1/ (1-beta)) * (sum((p[s] * umax[s] for s in 1:nscenarios)) + ((1-total_scenario_prob)*(total_demand-alpha))))
     end
+
+    # println(Dates.format(now(), "HH:MM:SS"), ": writing to file")
+    # writeMPS(model, "blahblahjl.mps")
+    # MOI.write_to_file(model, "blahblahjl.lp")
 
     println(Dates.format(now(), "HH:MM:SS"), ": ready to solve")
     flush(stdout)
