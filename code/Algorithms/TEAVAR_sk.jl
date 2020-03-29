@@ -237,16 +237,65 @@ function TEAVAR_SK(env,
 				weight = result_a[f,t]/ flow_totalalloc
 	   		end
 	   		flow_tunnel_weights[f,t] = weight
-        	end
+        end
 	end
+	
+	flow_allocation_3 = Array{Float64}(undef, nflows)
+	for f in 1:nflows
+		flow_per_scenario_losses = Array{Tuple{Float64,Int64,Float64}}(undef, nscenarios)
+		for ss in 1:nscenarios
+			flow_per_scenario_losses[ss] = (loss_s_f[ss, f], ss, p[ss])
+		end
+		
+		flow_per_scenario_losses = sort(flow_per_scenario_losses, by = first)
+		
+		flow_total_prob_thus_far = 0
+		flow_loss = 0
+		flow_loss_cutoff_iter = 0
+		if flow_total_prob_thus_far < beta
+			for ss in 1:nscenarios
+				tup = flow_per_scenario_losses[ss]
+				flow_total_prob_thus_far += tup[3]
+				if flow_total_prob_thus_far >= beta
+					flow_loss = tup[1]
+					flow_loss_cutoff_iter = ss
+					break
+				end
+			end
+			if flow_loss_cutoff_iter == 0
+				println("WARN!!!! did not get flow loss")
+			else
+				println("Flow ", f, " loss = ", flow_loss, " at cutoffindex= ", flow_loss_cutoff_iter, " totprob= ", flow_total_prob_thus_far)
+				println("Flow losses sorted: ", flow_per_scenario_losses)
+			end
+		end
+		
+		if max_concurrent_flow
+			flow_allocation_3[f] = demand[f] * (1- flow_loss)
+		else
+			flow_allocation_3[f] = demand[f] - flow_loss
+		end
+	end
+	
+	# to account for minor off-by-epsilon negative values
+	# should be asserting
+	flow_allocation_1[flow_allocation_1 .< 0] .= 0
+	flow_allocation_2[flow_allocation_2 .< 0] .= 0
+	flow_allocation_3[flow_allocation_3 .< 0] .= 0
 
-	println("totalalloc= ", all_flow_alloc, " netalloc1/2= ", sum(flow_allocation_1[f] for f in 1:nflows), " ", sum(flow_allocation_2[f] for f in 1:nflows))
+
+	println("totalalloc= ", all_flow_alloc, " netalloc1/2/3= ", 
+		sum(flow_allocation_1[f] for f in 1:nflows), " ", 
+		sum(flow_allocation_2[f] for f in 1:nflows), " ", 
+		sum(flow_allocation_3[f] for f in 1:nflows))
 
 	skoutput=open(outputfilename, "w")
 	write(skoutput, "---flow_allocation with alpha---\n")
 	writedlm(skoutput, flow_allocation_1, ',')
 	write(skoutput, "---flow_allocation with ell_k_beta---\n")
 	writedlm(skoutput, flow_allocation_2, ',')
+	write(skoutput, "---flow_allocation with per_flow_loss---\n")
+	writedlm(skoutput, flow_allocation_3, ',')
 	write(skoutput, "---weights per flow per tunnel---\n")
 	writedlm(skoutput, flow_tunnel_weights, ',')
 	flush(skoutput)
