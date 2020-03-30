@@ -30,7 +30,7 @@ with open(result_fname, 'r') as rf:
 if DEBUG:
     print("Found baselines={}".format(baselines))
 
-output_fnames = list(iglob('{}/teavar_star_{}_d*_maxflow_edinvcap4_topo_*'.format(DIR, topo)))
+output_fnames = list(iglob('{}/teavar_star_{}_d*_maxflow_edinvcap4_topo_*downscale_2_*'.format(DIR, topo)))
 
 for o_fname in output_fnames:
     if DEBUG:
@@ -90,9 +90,11 @@ for o_fname in output_fnames:
                 total_demand = match.group(1)
                 num_match += 1
 
-            match = re.search(r'netalloc1/2= ([\d.]+)', line)
+            match = re.search(r'netalloc1/2/3= ([\d.]+) ([\d.]+) ([\d.]+)', line)
             if match:
-                netalloc = match.group(1)
+                netalloc = match.group(3) # this is the total demand based on per-demand allocations
+                netalloc1 = match.group(1) # this is the total demand by \alpha
+                netalloc2 = match.group(2) # this is the total demand by appendix B; \ell_beta
                 num_match += 1
 
             match = re.search(r'total_scenario_prob= ([\d.]+)', line)
@@ -118,4 +120,4 @@ for o_fname in output_fnames:
             o_fname
             ))
     if f > 0 and r > 0:
-       print("Flush {} {} {} {}".format(total_scenario_prob, z, f/pf_f, r/pf_r))
+        print("Flush {} {} {} {} {} {} {} {}".format(beta, total_scenario_prob, z, f/pf_f, r/pf_r, num_scenarios, pf_f, pf_r))
