@@ -62,11 +62,15 @@ function TEAVAR_SK(env,
 
     println(Dates.format(now(), "HH:MM:SS"), ": created tunnel edge matrix")
 
-    model = Model(solver=GurobiSolver(env, OutputFlag=1))
+    model = Model(solver=GurobiSolver(env, OutputFlag=1, Method=2, Crossover=0))
     # flow per commodity per path variables
-    @variable(model, a[1:nflows, 1:k] >= 0, basename="a", category=:SemiCont)
+    # @variable(model, a[1:nflows, 1:k] >= 0, basename="a", category=:SemiCont)
+	@variable(model, a[1:nflows, 1:k] >= 0, basename="a")
+
     # alpha variable
-    @variable(model, alpha >= 0, basename="alpha", category=:SemiCont)
+    # @variable(model, alpha >= 0, basename="alpha", category=:SemiCont)
+    @variable(model, alpha >= 0, basename="alpha")
+	
     # maximum flow lost in that scenario
     @variable(model, umax[1:nscenarios] >= 0, basename="umax")
     # flow lost per commod per scenario

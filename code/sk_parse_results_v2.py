@@ -8,6 +8,7 @@ from glob import iglob
 # for gcr-azsb-106
 DIR = "/home/kandula/NetContract/code/teavar/code/"
 topo = sys.argv[1] #"b4-teavar.json" #sys.argv[0]
+mode = sys.argv[2] # has to be either "teavar_star" or "teavar"
 DEBUG = False
 
 result_fname = "teavar_star_plots/data/result.{}".format(topo)
@@ -30,7 +31,13 @@ with open(result_fname, 'r') as rf:
 if DEBUG:
     print("Found baselines={}".format(baselines))
 
-output_fnames = list(iglob('{}/teavar_star_{}_d*_maxflow_edinvcap4_topo_*downscale_2_*'.format(DIR, topo)))
+if mode == "teavar_star":
+    output_fnames = list(iglob('{}/teavar_star_{}_d*_maxflow_edinvcap4_topo_*downscale_2_*'.format(DIR, topo))) + list(iglob('{}/runlogs/teavar_star_{}_d*_maxflow_edinvcap4_topo_*downscale_2_*'.format(DIR, topo)))
+elif mode == "teavar":
+    output_fnames = list(iglob('{}/teavar_{}_d*_mcf_edinvcap4_topo_*'.format(DIR, topo))) + list(iglob('{}/runlogs/teavar_{}_d*_mcf_edinvcap4_topo_*'.format(DIR, topo)))
+else:
+    print("unknonw mode={}".format(mode))
+    exit
 
 for o_fname in output_fnames:
     if DEBUG:
@@ -50,7 +57,7 @@ for o_fname in output_fnames:
     num_must_match = 8  # ignore partial output files
     
     # parse some fields from file name
-    match = re.search(r'_d([\d.]+)_maxflow', o_fname)
+    match = re.search(r'_d([\d.]+)_maxflow', o_fname) if mode == "teavar_star" else re.search(r'_d([\d.]+)_mcf', o_fname)
     if match:
         demand_num = match.group(1)
         num_match += 1
@@ -90,11 +97,15 @@ for o_fname in output_fnames:
                 total_demand = match.group(1)
                 num_match += 1
 
-            match = re.search(r'netalloc1/2/3= ([\d.]+) ([\d.]+) ([\d.]+)', line)
+            match = re.search(r'netalloc1/2/3= ([\d.]+) ([\d.]+) ([\d.]+)', line) if mode == "teavar_star" else re.search(r'netalloc1= ([\d.]+)', line)
             if match:
-                netalloc = match.group(3) # this is the total demand based on per-demand allocations
                 netalloc1 = match.group(1) # this is the total demand by \alpha
-                netalloc2 = match.group(2) # this is the total demand by appendix B; \ell_beta
+                if mode == "teavar_star":
+                    netalloc = match.group(3) # this is the total demand based on per-demand allocations
+                    netalloc2 = match.group(2) # this is the total demand by appendix B; \ell_beta
+                else:
+                    netalloc = netalloc1
+                    netalloc2 = netalloc1
                 num_match += 1
 
             match = re.search(r'total_scenario_prob= ([\d.]+)', line)

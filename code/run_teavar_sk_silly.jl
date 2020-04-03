@@ -7,6 +7,8 @@ env = Gurobi.Env()
 setparam!(env, "Method", 2) # choose only barrier; since crossover is needed for concurrent and that takes too long
 setparam!(env, "Crossover", 0) # disable barrier crossover
 
+print("method= ", getparam(env, "Method"), "; crossover= ", getparam(env, "Crossover"))
+
 topology = ARGS[1]
 # failure probabilities must always come from topology
 weibull = false
