@@ -20,7 +20,7 @@ function printResults(o, alpha, a, u, umax, edges, scenarios, T, Tf, L, capacity
             println("\n")
         end
     end
-    if verbose
+    if verbose && false # too many scenarios in some cases
         println("--------------- Loss Breakdown ---------------------\n")
         for s in 1:size(umax,1)
             println("Scenario ", s, ": ", scenarios[s], " prob: ", p[s])

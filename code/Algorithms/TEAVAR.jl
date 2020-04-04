@@ -13,8 +13,7 @@ function TEAVAR(env,
                 Tf,
                 scenarios,
                 scenario_probs,
-		outputfilename;
-                max_concurrent_flow=true,
+				outputfilename;
                 explain=false,
                 verbose=false,
                 utilization=false,
@@ -25,6 +24,8 @@ function TEAVAR(env,
     ntunnels = length(T)
     nscenarios = length(scenarios)
     p = scenario_probs
+	
+	println(Dates.format(now(), "HH:MM:SS"), ": #edges ", nedges, " #flows ", nflows, " #tunnels ", ntunnels, " #scenarios ", nscenarios)
 
     #CREATE TUNNEL SCENARIO MATRIX
     X  = ones(nscenarios,ntunnels)
@@ -45,6 +46,8 @@ function TEAVAR(env,
             end
         end
     end
+	
+	println(Dates.format(now(), "HH:MM:SS"), ": created tunnel scenario matrix")
 
     #CREATE TUNNEL EDGE MATRIX
     L = zeros(ntunnels, nedges)
@@ -56,6 +59,8 @@ function TEAVAR(env,
         end
     end
 
+    println(Dates.format(now(), "HH:MM:SS"), ": created tunnel edge matrix")
+
     model = Model(solver=GurobiSolver(env, OutputFlag=1))
     # flow per commodity per path variables
     @variable(model, a[1:nflows, 1:k] >= 0, basename="a", category=:SemiCont)
@@ -66,14 +71,11 @@ function TEAVAR(env,
     # flow lost per commod per scenario
     @variable(model, u[1:nscenarios, 1:nflows] >= 0, basename="u")
  
-    # for s in 1:nscenarios
     # capacity constraints for final flow assigned to "a" variables
     for e in 1:nedges
         @constraint(model, sum(a[f,t] * L[Tf[f][t],e] for f in 1:nflows, t in 1:size(Tf[f],1)) <= capacity[e])
     end
-    # end
 
-    if max_concurrent_flow
       # FLOW LEVEL LOSS
       @expression(model, satisfied[s=1:nscenarios, f=1:nflows], sum(a[f,t] * X[s,Tf[f][t]] for t in 1:size(Tf[f],1)) / demand[f])
 
@@ -83,11 +85,6 @@ function TEAVAR(env,
               @constraint(model, u[s,f] >= 1 - satisfied[s,f])
           end
       end
-
-      # SCENARIO LEVEL LOSS
-      # for s in 1:nscenarios
-          # @constraint(model, umax[s] + alpha >= 0)
-      # end
 
       for s in 1:nscenarios
           if average
@@ -100,11 +97,12 @@ function TEAVAR(env,
           end
       end
       @objective(model, Min, alpha + (1 / (1 - beta)) * sum((p[s] * umax[s] for s in 1:nscenarios)))
-    else
-      # TODO
-    end
+
+    println(Dates.format(now(), "HH:MM:SS"), ": ready to solve")
+
     solve(model)
 
+    println(Dates.format(now(), "HH:MM:SS"), ": solver finished; explaining")
 
     if (explain)
         println("Runtime: ", getsolvetime(model))
@@ -112,12 +110,56 @@ function TEAVAR(env,
 	println("#flows: ", nflows)
 	println("#edges: ", nedges)
 	println("#tunnels: ", ntunnels)
-	println("#demands: ", nflows, " total demand= ", sum(demand[f] for f in 1:nflows))
+	println("#demands: ", nflows, " total demand=", sum(demand[f] for f in 1:nflows))
 	println("#scenarios: ", nscenarios, " total_prob= ", sum(p[s] for s in 1:nscenarios))
+	println("total_scenario_prob= ", sum(p[s] for s in 1:nscenarios))
 
-        printResults(getobjectivevalue(model), getvalue(alpha), getvalue(a), getvalue(u), getvalue(umax), edges, scenarios, T, Tf, L, capacity, p, demand, verbose=verbose, utilization=utilization)
+	result_u = getvalue(u)
+	result_umax = getvalue(umax)
+	result_satisfied = getvalue(satisfied)
+	result_alpha = getvalue(alpha)
+	result_a = getvalue(a)
+	
+	# compute allocations and weights
+	flow_allocation_1 = Array{Float64}(undef, nflows)
+	numtunnel_perflow = 0
+	for f in 1:nflows
+		numtunnel_perflow = max(numtunnel_perflow, size(Tf[f], 1))
+	end
+	flow_tunnel_weights = Matrix{Float64}(undef, nflows, numtunnel_perflow)
+	all_flow_alloc = 0
+	
+	for f in 1:nflows
+		flow_totalalloc = 0
+		for t in 1:size(Tf[f], 1)
+			flow_totalalloc += result_a[f,t]
+		end
+		
+		all_flow_alloc += flow_totalalloc
+		flow_allocation_1[f] = (1 - result_alpha) * min(flow_totalalloc, demand[f])
+		for t in 1:size(Tf[f], 1)
+			weight = 0
+			if flow_totalalloc > 0
+				weight = result_a[f, t]/ flow_totalalloc
+			end
+			flow_tunnel_weights[f, t] = weight
+		end
+	end
+	flow_allocation_1[flow_allocation_1 .< 0] .= 0
+	
+	println("totalalloc= ", all_flow_alloc, " netalloc1= ", sum(flow_allocation_1[f] for f in 1:nflows))
+
+	skoutput = open(outputfilename, "w")
+	write(skoutput, "---flow allocation with alpha---\n")
+	writedlm(skoutput, flow_allocation_1, ',')
+	write(skoutput, "---weights per flow tunnel---\n")
+	writedlm(skoutput, flow_tunnel_weights, ',')
+	flush(skoutput)
+	close(skoutput)
+	
+        printResults(getobjectivevalue(model), result_alpha, result_a, result_u, result_umax, edges, scenarios, T, Tf, L, capacity, p, demand, verbose=verbose, utilization=utilization)
     end
     
-    return (getvalue(alpha), getobjectivevalue(model), getvalue(a), getvalue(umax), getsolvetime(model))
+    return (result_alpha, getobjectivevalue(model), result_a, result_umax, getsolvetime(model))
 end
 
