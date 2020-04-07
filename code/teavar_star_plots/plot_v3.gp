@@ -1,58 +1,15 @@
-set terminal pdfcairo
 
-set log x
-set log y
-set output 'teavar_star_beta_v2.pdf'
-set size 2,1
-set multiplot
-set size 1,0.5
-set xlabel 'Max. Assurance'
-set xrange [0.5:1]
-set xtics (0.5 0.6, 0.7, 0.8, 0.9, 1)
-set ylabel 'Runtime ratio over PF_4'
-set yrange [0.9:*]
-set origin 0,0.5
-set key at 0.7,10000000
+set output 'loss_due_to_failures.pdf'
+set xlabel '1 - (Flow carried by scheme/ Flow carried by PF_4 with no loss)'
+set ylabel 'CDF (over faults)'
+
 plot \
-	'data/parse_result_b4-teavar.json.flush' using 2:6 title 'B4', \
-	'data/parse_result_attmpls.graphml.flush' using 2:6 title 'ATT', \
-	'data/teavar_parse_result_b4-teavar.json.flush' using 2:6 title 'B4 teavar', \
-	'data/teavar_parse_result_attmpls.graphml.flush' using 2:6 title 'ATT teavar'
-	
-#	, \
-#	'data/parse_result_uninett2010.graphml.flush' using 2:6 title 'Uninett2010'
-
-set origin 0,0
-set size 1,0.5
-set yrange [*:1.1]
-set ylabel 'Flow ratio over PF_4'
-set key at 0.97,0.4
-plot \
-	'data/parse_result_b4-teavar.json.flush' using 2:5 title 'B4', \
-	'data/parse_result_attmpls.graphml.flush' using 2:5 title 'ATT', \
-	'data/teavar_parse_result_b4-teavar.json.flush' using 2:5 title 'B4 teavar', \
-	'data/teavar_parse_result_attmpls.graphml.flush' using 2:5 title 'ATT teavar'
-
-
-#	, \
-#	'data/parse_result_uninett2010.graphml.flush' using 1:4 title 'Uninett2010'
-	
-unset multiplot	
-reset
-
-set log x
-set log y
-set output 'teavar_star_oversub_v2.pdf'
-set size 1,1
-set origin 0,0
-set yrange [*:*]
-set xlabel 'Demand scale factor'
-set xrange [0.01:2]
-set xtics (0.01, 0.1, 0.5, 1, 2)
-plot \
-	'data/parse_result_b4-teavar.json.flush' using 3:4 title 'B4 Flow', \
-	'data/parse_result_b4-teavar.json.flush' using 3:5 title 'B4 Runtime', \
-	'data/parse_result_attmpls.graphml.flush' using 3:4 title 'ATT Flow', \
-	'data/parse_result_attmpls.graphml.flush' using 3:5 title 'ATT Runtime', \
-	'data/parse_result_uninett2010.graphml.flush' using 3:4 title 'Uninett2010', \
-	'data/parse_result_uninett2010.graphml.flush' using 3:5 title 'Uninett2010'
+	'data/agg_data_NCI_col0.pcdf' using 1:3 w lp ls 1 title 'NC before fault', \
+	'data/agg_data_NCI_col2.pcdf' using 1:3 w lp lt 2 title 'NC after fault', \
+	'data/agg_data_NCI_col3.pcdf' using 1:3 w lp lt 3 title 'NC after recompute', \
+	'data/agg_data_TEAVAR_col0.pcdf' using 1:3 w lp title 'TEAVAR before fault', \
+	'data/agg_data_TEAVAR_col1.pcdf' using 1:3 w lp title 'TEAVAR after fault', \
+	'data/agg_data_TEAVAR_col2.pcdf' using 1:3 w lp title 'TEAVAR after sources re-balance', \
+	'data/agg_data_TEAVARSTAR_col0.pcdf' using 1:3 w lp title 'TEAVAR* before fault', \
+	'data/agg_data_TEAVARSTAR_col1.pcdf' using 1:3 w lp title 'TEAVAR* after fault', \
+	'data/agg_data_TEAVARSTAR_col2.pcdf' using 1:3 w lp title 'TEAVAR* after sources re-balance'
