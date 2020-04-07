@@ -12,5 +12,5 @@ do
 			julia run_teavar_sk_silly.jl $topo $d $beta x EDInvCap4 topo_n${i}.txt 2 1 | tee teavar_star_${topo}_d${d}_maxflow_edinvcap4_topo_n${i}.txt_cutoff_downscale_2_beta${beta} > /dev/null; 
 		done; 
 	done; 
-done
+done;
 

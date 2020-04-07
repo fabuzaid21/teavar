@@ -8,10 +8,11 @@ from glob import iglob
 # for gcr-azsb-106
 DIR = "/home/kandula/NetContract/code/teavar/code/"
 topo = sys.argv[1] #"b4-teavar.json" #sys.argv[0]
+topol = topo if topo.islower() else topo.lower()
 mode = sys.argv[2] # has to be either "teavar_star" or "teavar"
 DEBUG = False
 
-result_fname = "teavar_star_plots/data/result.{}".format(topo)
+result_fname = "teavar_star_plots/data/result.{}".format(topol)
 if DEBUG:
     print("Reading baselines from {}".format(result_fname))
 baselines = {}
@@ -31,14 +32,24 @@ with open(result_fname, 'r') as rf:
 if DEBUG:
     print("Found baselines={}".format(baselines))
 
+output_fnames = list()
 if mode == "teavar_star":
-    output_fnames = list(iglob('{}/teavar_star_{}_d*_maxflow_edinvcap4_topo_*downscale_2_*'.format(DIR, topo))) + list(iglob('{}/runlogs/teavar_star_{}_d*_maxflow_edinvcap4_topo_*downscale_2_*'.format(DIR, topo)))
+    for whichtopo in [topo] if topo == topol else [topo, topol]:
+        for subdir in ["", "runlogs"]:
+            output_fnames += list(iglob('{}/{}/teavar_star_{}_d*_maxflow_edinvcap4_topo_*downscale_2_*'.format(DIR, subdir, whichtopo)))
 elif mode == "teavar":
-    output_fnames = list(iglob('{}/teavar_{}_d*_mcf_edinvcap4_topo_*'.format(DIR, topo))) + list(iglob('{}/runlogs/teavar_{}_d*_mcf_edinvcap4_topo_*'.format(DIR, topo)))
+    for whichtopo in [topo] if topo == topol else [topo, topol]:
+        for subdir in ["", "runlogs"]:
+            output_fnames += list(iglob('{}/{}/teavar_{}_d*_mcf_edinvcap4_topo_*'.format(DIR, subdir, whichtopo)))
 else:
     print("unknonw mode={}".format(mode))
     exit
+    
+# to remove duplicates
+output_fnames = set(output_fnames)
+print("# parsing a total of {} files".format(len(output_fnames)))
 
+valid_files = 0
 for o_fname in output_fnames:
     if DEBUG:
         print("Parsing output filename={}".format(o_fname))
@@ -118,6 +129,8 @@ for o_fname in output_fnames:
     if num_match != num_must_match:
         print("Skipping case {} only {}/{} matches; perhaps output is partial?".format(o_fname, num_match, num_must_match))
         continue
+        
+    valid_files += 1
 
     f = float(netalloc)* 1000
     r = float(runtime)
@@ -130,5 +143,7 @@ for o_fname in output_fnames:
             pf_f, pf_r, z,
             o_fname
             ))
-    if f > 0 and r > 0:
-        print("Flush {} {} {} {} {} {} {} {}".format(beta, total_scenario_prob, z, f/pf_f, r/pf_r, num_scenarios, pf_f, pf_r))
+    #if f > 0 and r > 0:
+    print("Flush {} {} {} {} {} {} {} {}".format(beta, total_scenario_prob, z, f/pf_f, r/pf_r, num_scenarios, pf_f, pf_r))
+    
+print("# valid files = {} out of {} total files".format(valid_files, len(output_fnames)))

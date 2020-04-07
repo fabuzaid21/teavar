@@ -16,7 +16,8 @@ set key at 0.7,10000000
 plot \
 	'data/parse_result_b4-teavar.json.flush' using 2:6 title 'B4', \
 	'data/parse_result_attmpls.graphml.flush' using 2:6 title 'ATT', \
-	'data/teavar_parse_result_b4-teavar.json.flush' using 2:6 title 'B4 teavar'
+	'data/teavar_parse_result_b4-teavar.json.flush' using 2:6 title 'B4 teavar', \
+	'data/teavar_parse_result_attmpls.graphml.flush' using 2:6 title 'ATT teavar'
 	
 #	, \
 #	'data/parse_result_uninett2010.graphml.flush' using 2:6 title 'Uninett2010'
@@ -29,7 +30,8 @@ set key at 0.97,0.4
 plot \
 	'data/parse_result_b4-teavar.json.flush' using 2:5 title 'B4', \
 	'data/parse_result_attmpls.graphml.flush' using 2:5 title 'ATT', \
-	'data/teavar_parse_result_b4-teavar.json.flush' using 2:5 title 'B4 teavar'
+	'data/teavar_parse_result_b4-teavar.json.flush' using 2:5 title 'B4 teavar', \
+	'data/teavar_parse_result_attmpls.graphml.flush' using 2:5 title 'ATT teavar'
 
 
 #	, \
