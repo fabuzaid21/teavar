@@ -90,3 +90,4 @@ plot \
 	'data/nci_timelapse' using 1:2 w l ls 1 title 'NC', \
 	'data/teavarstar_timelapse' using 1:2 w l ls 14 title 'TEAVAR*', \
 	'data/teavar_timelapse' using 1:2 w l ls 24 title 'TEAVAR'
+
