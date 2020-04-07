@@ -89,33 +89,48 @@ for($i=0; $i < @bins; $i++){
   my $v = $logBinsPDF{$bin}/ $totalValuesBinned;
 
   $totalSoFar += $v;
-	
-  if ( $i == 0 )
-    {
-      my $x = $minKey_associatedValue/ $totalValuesBinned;
-      my $point = .5 * ($minKey + $pointsInBin{"right"});
-
-      print "\t [debug] [bin index $i bin $bin] minkey print\n" if ($DEBUG);
-      print $minKey, "\t", $x, "\t", $x, "\n";
-      print $point, "\t", $v-$x, "\t", $totalSoFar, "\n" if ($v > $x);
-    }
-
-  elsif ( $i == $#bins )
-    {
-      my $point = .5 * ($pointsInBin{"left"} + $maxKey);
-      my $x = $maxKey_associatedValue/ $totalValuesBinned;
-
-      print "\t [debug] [bin index $i bin $bin] maxkey print\n" if ($DEBUG);
-
-      print $point, "\t", $v-$x, "\t", $totalSoFar - $x, "\n" if ($v > $x);
-      print $maxKey, "\t", $x, "\t", $totalSoFar, "\n";
-    }
-  else {
-    print "\t [debug] [bin index $i bin $bin] print\n" if ($DEBUG);
-
-    my $point = $pointsInBin{"middle"};
-    print $point, "\t", $v, "\t", $totalSoFar,"\n";
+  if ($i == 0)
+  {
+	print $minKey, "\t", 0, "\t", 0, "\n";
   }
+  
+  if (@bins > 1)
+  {
+	my $point = $pointsInBin{"middle"};
+	print $point, "\t", $v, "\t", $totalSoFar,"\n";
+  }
+  
+  if ($i == $#bins)
+  {
+	print $maxKey, "\t", 0, "\t", 1.0, "\n";
+  }
+	
+  # if ( $i == 0 )
+    # {
+      # my $x = $minKey_associatedValue/ $totalValuesBinned;
+      # my $point = .5 * ($minKey + $pointsInBin{"right"});
+
+      # print "\t [debug] [bin index $i bin $bin] minkey print\n" if ($DEBUG);
+      # print $minKey, "\t", 0, "\t", 0, "\n";
+      # print $point, "\t", $v, "\t", $totalSoFar, "\n" if ($v > $x);
+    # }
+
+  # if ( $i == $#bins )
+    # {
+      # my $point = .5 * ($pointsInBin{"left"} + $maxKey);
+      # my $x = $maxKey_associatedValue/ $totalValuesBinned;
+
+      # print "\t [debug] [bin index $i bin $bin] maxkey print\n" if ($DEBUG);
+
+      # print $point, "\t", $v-$x, "\t", $totalSoFar - $x, "\n" if ($v > $x);
+      # print $maxKey, "\t", $x, "\t", $totalSoFar, "\n";
+    # }
+  # else {
+    # print "\t [debug] [bin index $i bin $bin] print\n" if ($DEBUG);
+
+    # my $point = $pointsInBin{"middle"};
+    # print $point, "\t", $v, "\t", $totalSoFar,"\n";
+  # }
 }
 
 
