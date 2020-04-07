@@ -47,8 +47,8 @@ plot \
 
 set origin 0.48,0
 set size 0.52,0.95
-# set yrange [*:1.1]
-set yrange [*:*]
+set yrange [0:1.1]
+# set yrange [*:*]
 # set ytics ("10^{-3}" 0.001, "10^{-2}" 0.01, "0.1" 0.1, 0.2, 0.5, "1" 1)
 set ytics auto
 set nolog y
