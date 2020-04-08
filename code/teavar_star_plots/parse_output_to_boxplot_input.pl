@@ -1,3 +1,5 @@
+#!/usr/bin/perl
+
 my $scriptdir = "/home/kandula/NetContract/code/teavar/code/teavar_star_plots";
 my $datadir = $scriptdir."/data";
 my @filenames = (
