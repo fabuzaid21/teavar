@@ -1,6 +1,6 @@
 include("./util.jl")
 include("./parsers.jl")
-include("./Algorithms/TEAVAR_sk.jl")
+include("./Algorithms/TEAVAR_Star.jl")
 using Dates;
 
 env = Gurobi.Env()
