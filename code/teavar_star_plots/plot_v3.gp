@@ -29,46 +29,52 @@ set grid back ls 102
 set output 'loss_due_to_failures.pdf'
 set xlabel 'Loss = 1 - (Flow carried by scheme/ Flow carried by PF_4 when no fault)' offset 0,0.5
 set ylabel 'CDF (over faults)' offset 1
-set key at 0.9,0.7 font ",14"
+set key at 0.8,0.5 font ",14"
 
 plot \
-	'data/agg_data_NCI_col0.pcdf' using 1:3 w lp ls 1 title 'NC before fault', \
-	'data/agg_data_NCI_col3.pcdf' using 1:3 w lp ls 3 title 'NC after recompute', \
-	'data/agg_data_NCI_col2.pcdf' using 1:3 w lp ls 2 title 'NC after fault', \
+	'data/agg_data_NCI_col0.pcdf' using 1:3 w lp ls 1 title 'NCFlow before fault', \
+	'data/agg_data_NCI_col3.pcdf' using 1:3 w lp ls 3 title 'NCFlow after recompute', \
+	'data/agg_data_NCI_col2.pcdf' using 1:3 w lp ls 2 title 'NCFlow after fault', \
 	'data/agg_data_TEAVARSTAR_B0.99_col0.pcdf' using 1:3 w lp ls 11 title 'TEAVAR* before fault', \
 	'data/agg_data_TEAVARSTAR_B0.99_col2.pcdf' using 1:3 w lp ls 13 title 'TEAVAR* after re-balance',\
-	'data/agg_data_TEAVARSTAR_B0.99_col1.pcdf' using 1:3 w lp ls 12 title 'TEAVAR* after fault', \
-	'data/agg_data_TEAVAR_B0.99_col0.pcdf' using 1:3 w lp ls 21 title 'TEAVAR before fault', \
-	'data/agg_data_TEAVAR_B0.99_col2.pcdf' using 1:3 w lp ls 23 title 'TEAVAR after re-balance', \
-	'data/agg_data_TEAVAR_B0.99_col1.pcdf' using 1:3 w lp ls 22 title 'TEAVAR after fault'
+	'data/agg_data_TEAVARSTAR_B0.99_col1.pcdf' using 1:3 w lp ls 12 title 'TEAVAR* after fault'
+
+#, \
+#	'data/agg_data_TEAVAR_B0.99_col0.pcdf' using 1:3 w lp ls 21 title 'TEAVAR before fault', \
+#	'data/agg_data_TEAVAR_B0.99_col2.pcdf' using 1:3 w lp ls 23 title 'TEAVAR after re-balance', \
+#	'data/agg_data_TEAVAR_B0.99_col1.pcdf' using 1:3 w lp ls 22 title 'TEAVAR after fault'
 
 
-set terminal pdfcairo dashed font ",22" size 3,3
+set terminal pdfcairo dashed font ",16" size 2,3
 set output 'nci_time_to_recompute.pdf'
-set xlabel 'Recompute Time (ms)'
+set xlabel 'Recompute Time (ms)' offset -1,0.5
 set ylabel 'CDF (over faults)'
+set xtics 5
 set key at 14,0.5 spacing 1 samplen 0.4
 plot \
-	'data/agg_data_NCI_col4.pcdf' using (1000*$1):3 w l ls 31 title 'NC'
-	
+	'data/agg_data_NCI_col4.pcdf' using (1000*$1):3 w l ls 31 notitle 
 
-set terminal pdfcairo dashed font ",16" size 3,3
+# 'NC'
+
+
+set terminal pdfcairo dashed font ",18" size 4,3
 set output 'failure_timelapse.pdf'
 set style textbox opaque noborder
-set xlabel 'Time' offset 4,0.5
-set ylabel 'Flow Allocation relative to PF_4'
+set xlabel 'Time' offset 2,0.5
+set ylabel 'Total Flow, relative to PF_4'
 set xrange [-10:30]
 set yrange [0:1]
-set key above spacing 1 samplen 0.6 font ",14"
+set key above spacing 1 samplen 2 font ",17"
+set style arrow 1 head filled size screen 0.025,30,45
 set arrow nohead from 0,0 to 0,1 ls 41
 set arrow nohead from 10,0 to 10,1 ls 41
 set arrow nohead from 20,0 to 20,1 ls 41
-set arrow from -3,0.12 to 0,0.18
-set label "Fault happens" at -5, 0.1 font ",14" boxed
-set arrow from 7,0.22 to 10, 0.28
-set label "Tunnels rebalance" at 5, 0.2 font ",14" boxed
-set arrow from 17,0.33 to 20, 0.38
-set label "NC recomputes" at 15, 0.3 font ",14" boxed
+set arrow from -3,0.12 to 0,0.18 as 1
+set label "Fault happens" at -5, 0.1 font ",18" boxed
+set arrow from 7,0.22 to 10, 0.28 as 1
+set label "Tunnels rebalance" at 5, 0.2 font ",18" boxed
+set arrow from 16,0.68 to 20, 0.75 as 1
+set label "NCFlow recomputes" at 8, 0.65 font ",18" boxed
 
 eps=0.02
 eps2=0.4
@@ -87,7 +93,7 @@ set arrow from B-eps3+eps2,Y1-eps to B+eps3+eps2,Y1+eps nohead front
 unset xtics
 # set xtics ("Fault\n happens" 0, "Tunnels\n rebalance" 10, "NC\n recomputes" 20) font ",10" offset 0,.5
 plot \
-	'data/nci_timelapse' using 1:2 w l ls 1 title 'NC', \
+	'data/nci_timelapse' using 1:2 w l ls 1 title 'NCFlow', \
 	'data/teavarstar_timelapse' using 1:2 w l ls 14 title 'TEAVAR*', \
 	'data/teavar_timelapse' using 1:2 w l ls 24 title 'TEAVAR'
 

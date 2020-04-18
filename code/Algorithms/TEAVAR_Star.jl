@@ -2,7 +2,7 @@ include("../util.jl")
 
 using JuMP, Gurobi, MathOptFormat
 
-function TEAVAR_SK(env,
+function TEAVAR_Star(env,
                 edges,
                 capacity,
                 flows,
@@ -110,7 +110,6 @@ function TEAVAR_SK(env,
       @objective(model, Min, alpha + (1 / (1 - beta)) * (sum((p[s] * umax[s] for s in 1:nscenarios)) + ((1-total_scenario_prob) * (1-alpha) )))
 
     else
-      # srikanth 3/6/2020
       # TODO: do these loss formulas hold if demands are not satisfiable?
       println("Running max total flow")
       @expression(model, satisfied[s=1:nscenarios, f=1:nflows], sum(a[f,t] * X[s, Tf[f][t]] for t in 1:size(Tf[f],1)))
